@@ -25,13 +25,6 @@ impl CommandV2 {
     }
 }
 
-enum AddressFamily {
-    AfUnspec,
-    AfInet,
-    AfInet6,
-    AfUnix,
-}
-
 enum TransportProtocol {
     Unspec,
     /// TCP
@@ -50,10 +43,10 @@ struct ProxyHeaderV2 {
 impl ProxyHeaderV2 {
     fn create_v4(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
         let af_and_transport = match transport {
-                TransportProtocol::Unspec => AF_INET | TRANSPORT_UNSPEC,
-                TransportProtocol::Stream => AF_INET | TRANSPORT_STREAM,
-                TransportProtocol::Dgram => AF_INET | TRANSPORT_DGRAM,
-            };
+            TransportProtocol::Unspec => AF_INET | TRANSPORT_UNSPEC,
+            TransportProtocol::Stream => AF_INET | TRANSPORT_STREAM,
+            TransportProtocol::Dgram => AF_INET | TRANSPORT_DGRAM,
+        };
         let length = 12;
         ProxyHeaderV2 {
             sig: <[u8; 12]>::try_from(PROXY_PROTOCOL_START).unwrap(),
@@ -65,10 +58,10 @@ impl ProxyHeaderV2 {
 
     fn create_v6(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
         let af_and_transport = match transport {
-                TransportProtocol::Unspec => AF_INET6 | TRANSPORT_UNSPEC,
-                TransportProtocol::Stream => AF_INET6 | TRANSPORT_STREAM,
-                TransportProtocol::Dgram => AF_INET6 | TRANSPORT_DGRAM,
-            };
+            TransportProtocol::Unspec => AF_INET6 | TRANSPORT_UNSPEC,
+            TransportProtocol::Stream => AF_INET6 | TRANSPORT_STREAM,
+            TransportProtocol::Dgram => AF_INET6 | TRANSPORT_DGRAM,
+        };
         let length = 36;
         ProxyHeaderV2 {
             sig: <[u8; 12]>::try_from(PROXY_PROTOCOL_START).unwrap(),
@@ -88,41 +81,35 @@ impl ProxyHeaderV2 {
     }
 }
 
-struct V4ProxyAddress {
-    src: SocketAddrV4,
-    dest: SocketAddrV4,
+enum ProxyAddress {
+    V4 { src: SocketAddrV4, dest: SocketAddrV4 },
+    V6 { src: SocketAddrV6, dest: SocketAddrV6 },
+    Unix { src: [u8; 108], dest: [u8; 108] },
 }
 
-impl V4ProxyAddress {
+impl ProxyAddress {
     fn to_bytes(&self) -> Vec<u8> {
         let mut data = Vec::new();
-        data.extend_from_slice(&self.src.ip().octets());
-        data.extend_from_slice(&self.dest.ip().octets());
-        data.extend_from_slice(&self.src.port().to_be_bytes());
-        data.extend_from_slice(&self.dest.port().to_be_bytes());
+        match self {
+            ProxyAddress::V4 { src, dest } => {
+                data.extend_from_slice(&src.ip().octets());
+                data.extend_from_slice(&dest.ip().octets());
+                data.extend_from_slice(&src.port().to_be_bytes());
+                data.extend_from_slice(&dest.port().to_be_bytes());
+            }
+            ProxyAddress::V6 { src, dest } => {
+                data.extend_from_slice(&src.ip().octets());
+                data.extend_from_slice(&dest.ip().octets());
+                data.extend_from_slice(&src.port().to_be_bytes());
+                data.extend_from_slice(&dest.port().to_be_bytes());
+            }
+            ProxyAddress::Unix { src, dest } => {
+                data.extend_from_slice(src);
+                data.extend_from_slice(dest);
+            }
+        }
         data
     }
-}
-
-struct V6ProxyAddress {
-    src: SocketAddrV6,
-    dest: SocketAddrV6,
-}
-
-impl V6ProxyAddress {
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut data = Vec::new();
-        data.extend_from_slice(&self.src.ip().octets());
-        data.extend_from_slice(&self.dest.ip().octets());
-        data.extend_from_slice(&self.src.port().to_be_bytes());
-        data.extend_from_slice(&self.dest.port().to_be_bytes());
-        data
-    }
-}
-
-struct UnixProxyAddress {
-    src: [u8; 108],
-    dest: [u8; 108],
 }
 
 pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: SocketAddr, command: CommandV2) -> anyhow::Result<()> {
@@ -136,7 +123,7 @@ pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: Socke
 fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, command: CommandV2) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v4(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
-    let addr = V4ProxyAddress { src, dest };
+    let addr = ProxyAddress::V4 { src, dest };
     data.extend_from_slice(&addr.to_bytes());
 
     Ok(())
@@ -145,7 +132,7 @@ fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, 
 fn append_pp_v2_ipv6(data: &mut Vec<u8>, src: SocketAddrV6, dest: SocketAddrV6, command: CommandV2) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v6(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
-    let addr = V6ProxyAddress { src, dest };
+    let addr = ProxyAddress::V6 { src, dest };
     data.extend_from_slice(&addr.to_bytes());
 
     Ok(())
