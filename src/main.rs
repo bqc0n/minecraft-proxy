@@ -25,7 +25,7 @@ async fn main() -> std::io::Result<()> {
     
     let mut handlers = Vec::new();
 
-    for (key, proxy) in config.proxies {
+    for (_, proxy) in config.proxies {
         for bind_addr in proxy.bind {
             handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol)))
         }    

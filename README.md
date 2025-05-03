@@ -17,6 +17,8 @@ I created this for learning rust and TCP/IP programming.
 - UDP (Bedrock Edition) Proxy
 - Health Checking
 - Sorry Server (Fake MC Server)
+- SRV Record Support
+- Sanity Checks (e.g. panic when binding to the same address:port)
 
 ## Configuration
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct Configuration {
     #[serde(rename = "servers")]
     pub proxies: HashMap<String, ProxyConfig>,
-    pub sorry_server: SorryServer,
+    pub sorry_server: Option<SorryServer>,
 }
 
 #[derive(Deserialize, Debug)]
