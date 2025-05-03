@@ -1,6 +1,7 @@
 mod proxy;
 mod proxy_protocol;
 mod configuration;
+mod mcp;
 
 use crate::configuration::Configuration;
 use crate::proxy::proxy_tcp;
