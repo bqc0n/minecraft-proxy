@@ -22,31 +22,4 @@ I created this for learning rust and TCP/IP programming.
 
 ## Configuration
 
-### Minimal
-
-```yaml
-servers:
-  vanilla:
-    server: "192.0.2.1:25565"
-```
-
-### Extended
-
-```yaml
-servers:
-  vanilla_server:
-    # if no 'bind' found, it binds to "0.0.0.0:25565" and "[::]:25565"
-    server: "minecraft.example.com:25565"
-  modded_server:
-    bind:
-      - "0.0.0.0:25565"
-    server: "192.0.2.1:25656" # Port can be specified
-sorry:
-  version: "§cOffline"
-  motd:
-    - "§cServer is currently offline."
-    - "§bPlease try again later."
-  kick_message:
-    - "§cServer is currently offline."
-    - "§bPlease try again later."
-```
+Refer to the [examples](examples) for configurations.
