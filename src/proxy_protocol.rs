@@ -126,7 +126,15 @@ struct UnixProxyAddress {
     dest: [u8; 108],
 }
 
-pub fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, command: CommandV2) -> anyhow::Result<()> {
+pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: SocketAddr, command: CommandV2) -> anyhow::Result<()> {
+    match (src, dest) {
+        (SocketAddr::V4(src), SocketAddr::V4(dest)) => append_pp_v2_ipv4(data, src, dest, command),
+        (SocketAddr::V6(src), SocketAddr::V6(dest)) => append_pp_v2_ipv6(data, src, dest, command),
+        _ => Err(anyhow::anyhow!("Unsupported address family")),
+    }
+}
+
+fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, command: CommandV2) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v4(dest, command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = V4ProxyAddress { src, dest };
@@ -135,7 +143,7 @@ pub fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddr
     Ok(())
 }
 
-pub fn append_pp_v2_ipv6(data: &mut Vec<u8>, src: SocketAddrV6, dest: SocketAddrV6, command: CommandV2) -> anyhow::Result<()> {
+fn append_pp_v2_ipv6(data: &mut Vec<u8>, src: SocketAddrV6, dest: SocketAddrV6, command: CommandV2) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v6(dest, command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = V6ProxyAddress { src, dest };

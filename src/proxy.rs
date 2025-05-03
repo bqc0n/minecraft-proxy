@@ -2,17 +2,13 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use tokio::{io, select};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
-use crate::proxy_protocol::{append_pp_v2_ipv4, CommandV2};
+use crate::proxy_protocol::{append_proxy_protocol_v2, CommandV2};
 
-pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddrV4, proxy_protocol: bool) -> io::Result<()> {
+pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddr, proxy_protocol: bool) -> io::Result<()> {
     let listener = TcpListener::bind(listen).await?;
     loop {
         let (mut client, client_addr) = listener.accept().await?;
-        // Listening on IPv4 only, so ipv6 client is ignored
-        let client_addr = match client_addr {
-            SocketAddr::V4(addr) => addr,
-            _ => continue,
-        };
+        let client_local_addr = client.local_addr()?;
 
         tokio::spawn(async move {
             let mut upstream = match TcpStream::connect(server).await {
@@ -24,7 +20,7 @@ pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddrV4, proxy_prot
             };
             if proxy_protocol {
                 let mut data = Vec::new();
-                append_pp_v2_ipv4(&mut data, client_addr, server, CommandV2::Proxy).unwrap();
+                append_proxy_protocol_v2(&mut data, client_addr, client_local_addr, CommandV2::Proxy).unwrap();
                 client.read_to_end(&mut data).await.unwrap();
                 if let Err(_) = upstream.write_all(&data).await {
                     eprintln!("Failed to write to server");
@@ -39,3 +35,4 @@ pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddrV4, proxy_prot
         });
     }
 }
+
