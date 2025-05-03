@@ -10,7 +10,7 @@ use serde_json::json;
 use bytes::{BufMut, BytesMut};
 use serde_yaml::Error;
 use crate::configuration::Configuration;
-use crate::proxy::{proxy_tcp_v4};
+use crate::proxy::{proxy_tcp};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -26,15 +26,8 @@ async fn main() -> std::io::Result<()> {
     let mut handlers = Vec::new();
 
     for (key, proxy) in config.proxies {
-        for bind in proxy.bind {
-            match bind {
-                SocketAddr::V4(addr) => {
-                    handlers.push(tokio::spawn(proxy_tcp_v4(addr, proxy.server, proxy.proxy_protocol)))
-                }
-                SocketAddr::V6(addr) => {
-                    
-                }
-            }
+        for bind_addr in proxy.bind {
+            handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol)))
         }    
     }
     
@@ -45,17 +38,4 @@ async fn main() -> std::io::Result<()> {
     }
 
     Ok(())
-}
-
-// MinecraftのVarInt形式で整数を書き込む
-fn write_varint(buf: &mut BytesMut, mut value: i32) {
-    loop {
-        if (value & !0x7F) == 0 {
-            buf.put_u8(value as u8);
-            return;
-        } else {
-            buf.put_u8(((value & 0x7F) | 0x80) as u8);
-            value >>= 7;
-        }
-    }
 }

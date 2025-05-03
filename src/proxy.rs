@@ -4,8 +4,14 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 use crate::proxy_protocol::{append_proxy_protocol_v2, CommandV2};
 
-pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddr, proxy_protocol: bool) -> io::Result<()> {
+pub async fn proxy_tcp(listen: SocketAddr, server: SocketAddr, proxy_protocol: bool) -> io::Result<()> {
     let listener = TcpListener::bind(listen).await?;
+    if proxy_protocol {
+        println!("Listening on {}, forwarding to {} with PP", listen, server);
+    } else {
+        println!("Listening on {}, forwarding to {}", listen, server);
+    }
+
     loop {
         let (mut client, client_addr) = listener.accept().await?;
         let client_local_addr = client.local_addr()?;
@@ -35,4 +41,3 @@ pub async fn proxy_tcp_v4(listen: SocketAddrV4, server: SocketAddr, proxy_protoc
         });
     }
 }
-
