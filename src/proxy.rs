@@ -1,8 +1,8 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
-use tokio::{io, select};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 use crate::proxy_protocol::{append_proxy_protocol_v2, CommandV2};
+use std::net::SocketAddr;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::io;
 
 pub async fn proxy_tcp(listen: SocketAddr, server: SocketAddr, proxy_protocol: bool) -> io::Result<()> {
     let listener = TcpListener::bind(listen).await?;

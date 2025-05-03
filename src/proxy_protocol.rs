@@ -1,5 +1,4 @@
-use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
-use tokio::process::Command;
+use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
 const PROXY_PROTOCOL_START: &'static [u8] = &[0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A];
 
@@ -49,7 +48,7 @@ struct ProxyHeaderV2 {
 }
 
 impl ProxyHeaderV2 {
-    fn create_v4(addr: SocketAddrV4, command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
+    fn create_v4(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
         let af_and_transport = match transport {
                 TransportProtocol::Unspec => AF_INET | TRANSPORT_UNSPEC,
                 TransportProtocol::Stream => AF_INET | TRANSPORT_STREAM,
@@ -64,7 +63,7 @@ impl ProxyHeaderV2 {
         }
     }
 
-    fn create_v6(addr: SocketAddrV6, command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
+    fn create_v6(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
         let af_and_transport = match transport {
                 TransportProtocol::Unspec => AF_INET6 | TRANSPORT_UNSPEC,
                 TransportProtocol::Stream => AF_INET6 | TRANSPORT_STREAM,
@@ -135,7 +134,7 @@ pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: Socke
 }
 
 fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, command: CommandV2) -> anyhow::Result<()> {
-    let header = ProxyHeaderV2::create_v4(dest, command, TransportProtocol::Stream);
+    let header = ProxyHeaderV2::create_v4(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = V4ProxyAddress { src, dest };
     data.extend_from_slice(&addr.to_bytes());
@@ -144,7 +143,7 @@ fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, 
 }
 
 fn append_pp_v2_ipv6(data: &mut Vec<u8>, src: SocketAddrV6, dest: SocketAddrV6, command: CommandV2) -> anyhow::Result<()> {
-    let header = ProxyHeaderV2::create_v6(dest, command, TransportProtocol::Stream);
+    let header = ProxyHeaderV2::create_v6(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = V6ProxyAddress { src, dest };
     data.extend_from_slice(&addr.to_bytes());

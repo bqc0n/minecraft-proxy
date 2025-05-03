@@ -1,6 +1,7 @@
+use serde::Deserialize;
 use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
-use serde::{Deserialize, Serialize};
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::ops::Add;
 
 #[derive(Deserialize)]
 pub(crate) struct Configuration {
@@ -13,24 +14,30 @@ pub(crate) struct Configuration {
 pub struct ProxyConfig {
     #[serde(default = "default_bind")]
     pub bind: Vec<SocketAddr>,
-    #[serde(deserialize_with = "deserialize_listen")]
+    #[serde(deserialize_with = "deserialize_server")]
     pub server: SocketAddr,
     #[serde(default)] // Default to false
     pub proxy_protocol: bool,
 }
 
 #[derive(Deserialize)]
-pub struct SorryServer {
+pub struct SorryServer {}
 
-}
-
-fn deserialize_listen<'de, D>(deserializer: D) -> Result<SocketAddr, D::Error>
+fn deserialize_server<'de, D>(deserializer: D) -> Result<SocketAddr, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-   let sock_addr = s.to_socket_addrs()
-       .map_err(serde::de::Error::custom)?.collect::<Vec<_>>().get(0).cloned();
+    let sock_addr = match s.to_socket_addrs() {
+        Ok(a) => {
+            a.collect::<Vec<_>>().get(0).cloned()
+        }
+        Err(_) => {
+            s.add(":25565").to_socket_addrs()
+                .ok()
+                .and_then(|a| a.collect::<Vec<_>>().get(0).cloned())
+        }
+    };
     match sock_addr {
         Some(addr) => Ok(addr),
         None => Err(serde::de::Error::custom("Invalid socket address")),

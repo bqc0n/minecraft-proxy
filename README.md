@@ -36,7 +36,7 @@ servers:
 servers:
   vanilla_server:
     # if no 'bind' found, it binds to "0.0.0.0:25565" and "[::]:25565"
-    server: "minecraft.example.com" # Port defaults to 25565
+    server: "minecraft.example.com:25565"
   modded_server:
     bind:
       - "0.0.0.0:25565"
