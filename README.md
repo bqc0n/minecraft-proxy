@@ -25,9 +25,9 @@ I created this for learning rust and TCP/IP programming.
 ### Minimal
 
 ```yaml
-vanilla:
-  bind: "0.0.0.0:25565"
-  host: "192.0.2.1"
+servers:
+  vanilla:
+    server: "192.0.2.1:25565"
 ```
 
 ### Extended
@@ -38,12 +38,9 @@ servers:
     # if no 'bind' found, it binds to "0.0.0.0:25565" and "[::]:25565"
     server: "minecraft.example.com" # Port defaults to 25565
   modded_server:
-    proxy_protocol: true # Optional, default is false
     bind:
       - "0.0.0.0:25565"
-      - "[::]:25565"
     server: "192.0.2.1:25656" # Port can be specified
-# You can configure Sorry server, which is used when all servers are offline
 sorry:
   version: "§cOffline"
   motd:
