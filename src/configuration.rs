@@ -7,7 +7,7 @@ use std::ops::Add;
 pub(crate) struct Configuration {
     #[serde(rename = "servers")]
     pub proxies: HashMap<String, ProxyConfig>,
-    pub sorry_server: Option<SorryServer>,
+    pub sorry_server: Option<SorryServerConfig>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -21,7 +21,11 @@ pub struct ProxyConfig {
 }
 
 #[derive(Deserialize)]
-pub struct SorryServer {}
+pub(crate) struct SorryServerConfig {
+    pub(crate) version: String,
+    pub(crate) motd: Vec<String>,
+    pub(crate) kick_message: Vec<String>,
+}
 
 fn deserialize_server<'de, D>(deserializer: D) -> Result<SocketAddr, D::Error>
 where

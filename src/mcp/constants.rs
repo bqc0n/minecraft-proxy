@@ -1,0 +1,1 @@
+pub(super) const HANDHSAKE: u8 = 0x00;

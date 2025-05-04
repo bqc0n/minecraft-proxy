@@ -1,6 +1,8 @@
+use bytes::{BufMut, BytesMut};
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, ToSocketAddrs};
+use crate::mcp::constants;
 use crate::mcp::ping::Response;
 
 /// Activates Fake Minecraft Server on a given address and port.
@@ -14,8 +16,37 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
 
     loop {
         let (mut client, _) = listener.accept().await?;
+
+        println!("Fake Minecraft Server accepted from {}", client.peer_addr()?);
         
-        let response = serde_yaml::to_string(&response)?;
-        client.write_all(response.as_bytes()).await?; 
+        let response = serde_json::to_string(&response)?;
+
+        println!("Fake Minecraft Server response: {}", response);
+        let response_bytes = response.as_bytes();
+
+        let mut packet = BytesMut::new();
+        let mut data = BytesMut::new();
+        data.put_u8(constants::HANDHSAKE);
+        write_varint(&mut data, response_bytes.len() as i32);
+        data.extend_from_slice(&response_bytes);
+
+        write_varint(&mut packet, data.len() as i32);
+        packet.extend_from_slice(&data);
+
+        if client.write_all(&packet).await.is_ok() {
+            let _ = client.shutdown().await;
+        }
+    }
+}
+
+fn write_varint(buf: &mut BytesMut, mut value: i32) {
+    loop {
+        if (value & !0x7F) == 0 {
+            buf.put_u8(value as u8);
+            return;
+        } else {
+            buf.put_u8(((value & 0x7F) | 0x80) as u8);
+            value >>= 7;
+        }
     }
 }

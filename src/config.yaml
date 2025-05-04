@@ -4,11 +4,11 @@ servers:
     # if no 'bind' found, it binds to "0.0.0.0:25565" and "[::]:25565"
     server: "minecraft.bqc0n.com:27135"
 
-#sorry_server:
-#  version: "§cOffline"
-#  motd:
-#    - "§cServer is currently offline."
+sorry_server:
+  version: "Maintenance"
+  motd:
+    - "§cServer is currently offline."
 #    - "§bPlease try again later."
-#  kick_message:
-#    - "§cServer is currently offline."
+  kick_message:
+    - "§cServer is currently offline."
 #    - "§bPlease try again later."

@@ -8,6 +8,7 @@ use crate::proxy::proxy_tcp;
 use anyhow::Error;
 use bytes::BufMut;
 use std::str::FromStr;
+use serde::Serialize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::main]
@@ -19,7 +20,7 @@ async fn main() -> Result<(), Error> {
             return Err(e.into());
         }
     };
-
+    
     let mut handlers = Vec::new();
 
     for (_, proxy) in config.proxies {
