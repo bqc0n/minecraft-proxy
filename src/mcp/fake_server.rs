@@ -17,27 +17,17 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
     loop {
         let (mut client, _) = listener.accept().await?;
 
-        println!("Fake Minecraft Server accepted from {}", client.peer_addr()?);
-        
         let response = serde_json::to_string(&response)?;
         let response_bytes = response.as_bytes();
 
-        let packet = protocol::create_packet(constants::HANDHSAKE, response_bytes);
+        let mut packet_data = BytesMut::new();
+        protocol::write_varint(&mut packet_data, response_bytes.len() as i32);
+        packet_data.extend_from_slice(response_bytes);
+
+        let packet = protocol::create_packet(constants::HANDHSAKE, packet_data);
 
         if client.write_all(&packet).await.is_ok() {
             let _ = client.shutdown().await;
-        }
-    }
-}
-
-fn write_varint(buf: &mut BytesMut, mut value: i32) {
-    loop {
-        if (value & !0x7F) == 0 {
-            buf.put_u8(value as u8);
-            return;
-        } else {
-            buf.put_u8(((value & 0x7F) | 0x80) as u8);
-            value >>= 7;
         }
     }
 }

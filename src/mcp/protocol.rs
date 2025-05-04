@@ -1,16 +1,18 @@
 use std::io;
 use std::io::ErrorKind;
 use bytes::{Buf, BufMut, BytesMut};
+use crate::mcp::constants;
 
 const VARINT_SEGMENT_BITS: u8 = 0x7F;
 const VARINT_CONTINUE_BIT: u8 = 0x80;
 
 /// パケットをバッファに書き出す（シリアライズ）
-pub fn create_packet(id: u8, data: &[u8]) -> BytesMut {
+pub fn create_packet(id: u8, data: BytesMut) -> BytesMut {
     let mut packet = BytesMut::new();
 
-    write_varint(&mut packet, data.len() as i32);
-    write_varint(&mut packet, id as i32);
+    // Packet ID is written, so +1 length
+    write_varint(&mut packet, (data.len() + 1) as i32);
+    packet.put_u8(id);
     packet.extend_from_slice(&data);
 
     packet
@@ -59,7 +61,7 @@ impl VarInt {
     }
 }
 
-fn write_varint(buf: &mut BytesMut, mut value: i32) {
+pub(super) fn write_varint(buf: &mut BytesMut, mut value: i32) {
     loop {
         if (value & !0x7F) == 0 {
             buf.put_u8(value as u8);
