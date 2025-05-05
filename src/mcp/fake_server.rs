@@ -24,8 +24,8 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
         protocol::write_varint(&mut packet_data, response_bytes.len() as i32);
         packet_data.extend_from_slice(response_bytes);
 
-        let packet = protocol::create_packet(constants::HANDHSAKE, packet_data);
-
+        let packet = protocol::create_packet(constants::HANDSHAKE, packet_data);
+        
         if client.write_all(&packet).await.is_ok() {
             let _ = client.shutdown().await;
         }
