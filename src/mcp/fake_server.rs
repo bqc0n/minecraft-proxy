@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
-use tokio::net::{TcpListener, ToSocketAddrs};
+use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 use crate::mcp::{constants, protocol};
 use crate::mcp::ping::Response;
 
@@ -30,4 +30,21 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
             let _ = client.shutdown().await;
         }
     }
+}
+
+pub async fn respond(client: &mut TcpStream, response: &Response) -> anyhow::Result<()> {
+    let response = serde_json::to_string(&response)?;
+    let response_bytes = response.as_bytes();
+
+    let mut packet_data = BytesMut::new();
+    protocol::write_varint(&mut packet_data, response_bytes.len() as i32);
+    packet_data.extend_from_slice(response_bytes);
+
+    let packet = protocol::create_packet(constants::HANDSHAKE, packet_data);
+
+    if client.write_all(&packet).await.is_ok() {
+        let _ = client.shutdown().await;
+    }
+
+    Ok(())
 }

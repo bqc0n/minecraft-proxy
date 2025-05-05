@@ -1,7 +1,9 @@
-use std::io;
-use std::io::ErrorKind;
-use bytes::{Buf, BufMut, BytesMut};
-use crate::mcp::constants::{VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, VARINT_SEGMENT_BITS, VARINT_SEGMENT_BITS_I32};
+use crate::mcp::constants::{VARINT_CONTINUE_BIT_I32, VARINT_SEGMENT_BITS_I32};
+use bytes::{BufMut, BytesMut};
+
+pub(crate) trait MinecraftPacket {
+    fn to_bytes(&self) -> BytesMut;
+}
 
 pub fn create_packet(id: u8, data: BytesMut) -> BytesMut {
     let mut packet_data = BytesMut::new();

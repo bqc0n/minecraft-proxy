@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::ops::Add;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub(crate) struct Configuration {
     #[serde(rename = "servers")]
     pub proxies: HashMap<String, ProxyConfig>,
     pub sorry_server: Option<SorryServerConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ProxyConfig {
     #[serde(default = "default_bind")]
     pub bind: Vec<SocketAddr>,
@@ -20,7 +20,7 @@ pub struct ProxyConfig {
     pub proxy_protocol: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub(crate) struct SorryServerConfig {
     pub(crate) version: String,
     pub(crate) motd: Vec<String>,

@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use crate::configuration::SorryServerConfig;
 use crate::mcp::constants::DEFAULT_PROTOCOL;
+use crate::mcp::protocol;
+use crate::mcp::protocol::MinecraftPacket;
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Response {
     version: Version,
     players: Players,
@@ -35,26 +37,26 @@ impl Response {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Version {
     pub name: String,
     pub protocol: u32,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Players {
     pub max: u32,
     pub online: u32,
     pub sample: Vec<Sample>
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Sample {
     pub id: String,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Description {
     pub text: String,
 }

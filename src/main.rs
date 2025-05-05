@@ -2,15 +2,18 @@ mod proxy;
 mod proxy_protocol;
 mod configuration;
 mod mcp;
+mod health_check;
 
 use crate::configuration::Configuration;
 use crate::proxy::proxy_tcp;
 use anyhow::Error;
 use bytes::BufMut;
 use std::str::FromStr;
+use std::time::Duration;
 use serde::Serialize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use crate::mcp::fake_server;
+use crate::mcp::{fake_server, ping};
+use crate::mcp::ping::Response;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,23 +25,28 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let resp = mcp::ping::Response::from_config(config.sorry_server.unwrap());
-    fake_server::listen("127.0.0.1:25565", resp).await?;
+    let mut handlers = Vec::new();
+    let response: Option<Response> = if let Some(ss_config) = config.sorry_server {
+        Some(ping::Response::from_config(ss_config))
+    } else {
+        None
+    };
 
-    //
-    // let mut handlers = Vec::new();
-    //
-    // for (_, proxy) in config.proxies {
-    //     for bind_addr in proxy.bind {
-    //         handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol)))
-    //     }
-    // }
-    //
-    // for handler in handlers {
-    //     if let Err(e) = handler.await {
-    //         eprintln!("Error: {:?}", e);
-    //     }
-    // }
-    //
+    for (_, proxy) in config.proxies {
+        for bind_addr in proxy.bind {
+            let (tx, rx) = tokio::sync::watch::channel(true);
+            handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol, rx, response.clone())));
+            handlers.push(tokio::spawn(
+                health_check::activate_health_check_for(proxy.server, tx, Duration::from_secs(5)),
+            ))
+        }
+    }
+
+    for handler in handlers {
+        if let Err(e) = handler.await {
+            eprintln!("Error: {:?}", e);
+        }
+    }
+
     Ok(())
 }
