@@ -67,7 +67,7 @@ pub async fn proxy_tcp(
                 debug!("Server {} is down", server);
             }
             if let Some(ref fake_server_response) = fake_server_response {
-                match fake_server::respond(&mut client, fake_server_response).await {
+                match fake_server::handle_connection(&mut client, fake_server_response).await {
                     Ok(_) => {}
                     Err(e) => error!("Fake Server failed to respond: {}", e),
                 }

@@ -2,8 +2,9 @@ use crate::mcp::ping::Response;
 use crate::mcp::{constants, protocol};
 use bytes::BytesMut;
 use log::info;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
+use crate::mcp::constants::HANDSHAKE;
 
 /// Activates Fake Minecraft Server on a given address and port.
 ///
@@ -35,7 +36,22 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
     }
 }
 
-pub async fn respond(client: &mut TcpStream, response: &Response) -> anyhow::Result<()> {
+pub async fn handle_connection(client: &mut TcpStream, response: &Response) -> anyhow::Result<()> {
+    let mut buf = BytesMut::new();
+    client.read_buf(&mut buf).await?;
+
+    let (length, packet_id) = protocol::read_packet(&mut buf);
+
+    if packet_id == HANDSHAKE {
+        handle_server_ping(client, response).await?;
+    } else {
+        info!("Unknown packet id: {}", packet_id);
+    }
+
+    Ok(())
+}
+
+async fn handle_server_ping(client: &mut TcpStream, response: &Response) -> anyhow::Result<()> {
     let response = serde_json::to_string(&response)?;
     let response_bytes = response.as_bytes();
 

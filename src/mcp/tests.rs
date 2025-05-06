@@ -6,6 +6,7 @@ use bytes::{Buf, BytesMut};
 use serde_json::{json, Value};
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
+use crate::mcp::protocol::read_varint;
 
 #[tokio::test]
 async fn test_fake_server_status() -> anyhow::Result<()> {
@@ -57,21 +58,3 @@ async fn test_fake_server_status() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn read_varint(buf: &mut BytesMut) -> anyhow::Result<u32> {
-    let mut value = 0;
-    let mut pos = 0;
-
-    loop {
-        let byte = buf.get_u8();
-        value |= ((byte & VARINT_SEGMENT_BITS) as u32) << pos;
-        if byte & VARINT_CONTINUE_BIT == 0 {
-            break;
-        }
-        pos += 7;
-        if pos >= 32 {
-            return Err(anyhow::anyhow!("Varint is too big"));
-        }
-    }
-
-    Ok(value)
-}
