@@ -6,15 +6,10 @@ mod proxy_protocol;
 
 use crate::configuration::Configuration;
 use crate::mcp::ping::Response;
-use crate::mcp::{fake_server, ping};
 use crate::proxy::proxy_tcp;
-use anyhow::Error;
-use bytes::BufMut;
 use env_logger::Env;
 use log::error;
-use std::str::FromStr;
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
