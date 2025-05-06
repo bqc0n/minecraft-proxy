@@ -5,13 +5,13 @@ servers:
     server: "minecraft.bqc0n.com:25565"
 health_check:
   enabled: true
-  interval: 5s
-  timeout: 3s
+  interval_sec: 5
+  timeout_sec: 3
 sorry_server:
   version: "Maintenance"
   motd:
     - "§cServer is currently offline."
-#    - "§bPlease try again later."
+    - "§bPlease try again later."
   kick_message:
     - "§cServer is currently offline."
-#    - "§bPlease try again later."
+    - "§bPlease try again later."

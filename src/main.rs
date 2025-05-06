@@ -8,7 +8,7 @@ use crate::configuration::Configuration;
 use crate::mcp::ping::Response;
 use crate::proxy::proxy_tcp;
 use env_logger::Env;
-use log::error;
+use log::{error, info};
 use std::time::Duration;
 
 #[tokio::main]
@@ -31,6 +31,14 @@ async fn main() -> anyhow::Result<()> {
         None
     };
 
+    if config.health_check.enabled {
+        info!(
+            "Health check enabled with {}s interval and {}s timeout",
+            config.health_check.interval().as_secs(),
+            config.health_check.timeout().as_secs()
+        );
+    }
+
     for (_, proxy) in config.proxies {
         for bind_addr in proxy.bind {
             let (tx, rx) = tokio::sync::watch::channel(true);
@@ -41,12 +49,14 @@ async fn main() -> anyhow::Result<()> {
                 rx,
                 response.clone(),
             )));
-            handlers.push(tokio::spawn(health_check::activate_health_check_for(
-                proxy.server,
-                tx,
-                Duration::from_secs(5),
-                Duration::from_secs(2),
-            )))
+            if config.health_check.enabled {
+                handlers.push(tokio::spawn(health_check::activate_health_check_for(
+                    proxy.server,
+                    tx,
+                    config.health_check.interval(),
+                    config.health_check.timeout(),
+                )))
+            }
         }
     }
 
