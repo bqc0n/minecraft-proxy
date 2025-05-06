@@ -11,14 +11,15 @@ I created this for learning rust and TCP/IP programming.
 - IPv4 and IPv6 support
 - TCP (Java Edition) Proxy
 - Proxy Protocol v2
+- Health Checking
+- Sorry Server (Fake MC Server) (Partially, only for server ping)
 
 ### Not Implemented
 
 - UDP (Bedrock Edition) Proxy
-- Health Checking
-- Sorry Server (Fake MC Server)
 - SRV Record Support
 - Sanity Checks (e.g. panic when binding to the same address:port)
+- Sorry Server Kick Message
 
 ## Configuration
 
