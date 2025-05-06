@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
 use crate::configuration::SorryServerConfig;
 use crate::mcp::constants::DEFAULT_PROTOCOL;
-use crate::mcp::protocol;
-use crate::mcp::protocol::MinecraftPacket;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct Response {

@@ -1,10 +1,10 @@
+use log::debug;
 use std::net::SocketAddr;
 use std::time::Duration;
-use log::debug;
 use tokio::net::TcpStream;
 use tokio::sync::watch::Sender;
-use tokio::{io, time};
 use tokio::time::sleep;
+use tokio::{io, time};
 
 pub(crate) async fn activate_health_check_for(
     server: SocketAddr,

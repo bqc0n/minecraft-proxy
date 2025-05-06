@@ -5,17 +5,17 @@ mod mcp;
 mod health_check;
 
 use crate::configuration::Configuration;
+use crate::mcp::ping::Response;
+use crate::mcp::{fake_server, ping};
 use crate::proxy::proxy_tcp;
 use anyhow::Error;
 use bytes::BufMut;
-use std::str::FromStr;
-use std::time::Duration;
 use env_logger::Env;
 use log::error;
 use serde::Serialize;
+use std::str::FromStr;
+use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use crate::mcp::{fake_server, ping};
-use crate::mcp::ping::Response;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

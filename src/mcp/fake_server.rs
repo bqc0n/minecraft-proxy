@@ -1,10 +1,10 @@
+use crate::mcp::ping::Response;
+use crate::mcp::{constants, protocol};
 use bytes::{BufMut, BytesMut};
 use log::info;
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
-use crate::mcp::{constants, protocol};
-use crate::mcp::ping::Response;
 
 /// Activates Fake Minecraft Server on a given address and port.
 ///
