@@ -1,4 +1,5 @@
 use bytes::{BufMut, BytesMut};
+use log::info;
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
@@ -12,7 +13,7 @@ use crate::mcp::ping::Response;
 /// - Handles Login. If a player tries to log in, it will kick the player with a custom message.
 pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Result<()> {
     let listener = TcpListener::bind(addr).await?;
-    println!("Fake Minecraft Server listening on {}", listener.local_addr()?);
+    info!("Fake Minecraft Server listening on {}", listener.local_addr()?);
 
     loop {
         let (mut client, _) = listener.accept().await?;

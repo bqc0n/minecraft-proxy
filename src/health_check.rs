@@ -1,24 +1,41 @@
 use std::net::SocketAddr;
 use std::time::Duration;
+use log::debug;
+use tokio::net::TcpStream;
 use tokio::sync::watch::Sender;
+use tokio::{io, time};
+use tokio::time::sleep;
 
-pub(crate) async fn activate_health_check_for(server: SocketAddr, tx: Sender<bool>, interval: Duration) -> tokio::io::Result<()> {
+pub(crate) async fn activate_health_check_for(
+    server: SocketAddr,
+    tx: Sender<bool>,
+    interval: Duration,
+    timeout: Duration,
+) -> io::Result<()> {
     loop {
-        println!("Health check for {}", server);
-        let mut stream = match tokio::net::TcpStream::connect(server).await {
-            Ok(stream) => stream,
-            Err(_) => {
-                println!("Server {} is down", server);
-                tx.send(false).unwrap();
-                tokio::time::sleep(interval).await;
-                continue;
+        sleep(interval).await;
+
+        debug!("Health check for {}", server);
+        let mut stream = match time::timeout(timeout, TcpStream::connect(server)).await {
+            Ok(r) => {
+                match r {
+                    Ok(stream) => stream,
+                    Err(_) => {
+                        debug!("Server {} is down", server);
+                        tx.send(false).unwrap();
+                        continue;
+                    }
+                }
             }
+            Err(e) => {
+                debug!("Server {} is down; Timeout {}", server, e);
+                tx.send(false).unwrap();
+                continue
+            },
         };
 
-        println!("Server {} is up", server);
+        debug!("Server {} is up", server);
         // Todo: Gather Server info using Minecraft Protocol
         tx.send(true).unwrap();
-
-        tokio::time::sleep(interval).await;
     }
 }
