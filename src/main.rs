@@ -1,8 +1,8 @@
+mod configuration;
+mod health_check;
+mod mcp;
 mod proxy;
 mod proxy_protocol;
-mod configuration;
-mod mcp;
-mod health_check;
 
 use crate::configuration::Configuration;
 use crate::mcp::ping::Response;
@@ -12,15 +12,13 @@ use anyhow::Error;
 use bytes::BufMut;
 use env_logger::Env;
 use log::error;
-use serde::Serialize;
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let env = Env::default()
-        .filter_or("RUST_LOG", "info");
+    let env = Env::default().filter_or("RUST_LOG", "info");
     env_logger::init_from_env(env);
 
     let config_file = std::fs::File::open("./src/config.yaml")?;
@@ -41,10 +39,19 @@ async fn main() -> anyhow::Result<()> {
     for (_, proxy) in config.proxies {
         for bind_addr in proxy.bind {
             let (tx, rx) = tokio::sync::watch::channel(true);
-            handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol, rx, response.clone())));
-            handlers.push(tokio::spawn(
-                health_check::activate_health_check_for(proxy.server, tx, Duration::from_secs(5), Duration::from_secs(2)),
-            ))
+            handlers.push(tokio::spawn(proxy_tcp(
+                bind_addr,
+                proxy.server,
+                proxy.proxy_protocol,
+                rx,
+                response.clone(),
+            )));
+            handlers.push(tokio::spawn(health_check::activate_health_check_for(
+                proxy.server,
+                tx,
+                Duration::from_secs(5),
+                Duration::from_secs(2),
+            )))
         }
     }
 

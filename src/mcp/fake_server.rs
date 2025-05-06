@@ -13,7 +13,10 @@ use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 /// - Handles Login. If a player tries to log in, it will kick the player with a custom message.
 pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Result<()> {
     let listener = TcpListener::bind(addr).await?;
-    info!("Fake Minecraft Server listening on {}", listener.local_addr()?);
+    info!(
+        "Fake Minecraft Server listening on {}",
+        listener.local_addr()?
+    );
 
     loop {
         let (mut client, _) = listener.accept().await?;
@@ -26,7 +29,7 @@ pub async fn listen<A: ToSocketAddrs>(addr: A, response: Response) -> anyhow::Re
         packet_data.extend_from_slice(response_bytes);
 
         let packet = protocol::create_packet(constants::HANDSHAKE, packet_data);
-        
+
         if client.write_all(&packet).await.is_ok() {
             let _ = client.shutdown().await;
         }

@@ -17,7 +17,10 @@ pub async fn proxy_tcp(
 ) -> io::Result<()> {
     let listener = TcpListener::bind(listen).await?;
     if proxy_protocol {
-        info!("Listening on {}, forwarding to {} with ProxyProtocol V2", listen, server);
+        info!(
+            "Listening on {}, forwarding to {} with ProxyProtocol V2",
+            listen, server
+        );
     } else {
         info!("Listening on {}, forwarding to {}", listen, server);
     }
@@ -35,12 +38,18 @@ pub async fn proxy_tcp(
                     Ok(upstream) => upstream,
                     Err(_) => {
                         error!("Failed to connect to server");
-                        return
-                    },
+                        return;
+                    }
                 };
                 if proxy_protocol {
                     let mut data = Vec::new();
-                    append_proxy_protocol_v2(&mut data, client_addr, client_local_addr, CommandV2::Proxy).unwrap();
+                    append_proxy_protocol_v2(
+                        &mut data,
+                        client_addr,
+                        client_local_addr,
+                        CommandV2::Proxy,
+                    )
+                    .unwrap();
                     client.read_to_end(&mut data).await.unwrap();
                     if let Err(_) = upstream.write_all(&data).await {
                         error!("Failed to write to server");

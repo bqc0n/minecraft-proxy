@@ -11,7 +11,6 @@ pub struct Response {
 
 impl Response {
     pub fn from_config(config: SorryServerConfig) -> Response {
-
         let version = Version {
             name: config.version,
             protocol: DEFAULT_PROTOCOL,
@@ -45,7 +44,7 @@ pub struct Version {
 pub struct Players {
     pub max: u32,
     pub online: u32,
-    pub sample: Vec<Sample>
+    pub sample: Vec<Sample>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]

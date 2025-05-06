@@ -33,14 +33,12 @@ where
 {
     let s = String::deserialize(deserializer)?;
     let sock_addr = match s.to_socket_addrs() {
-        Ok(a) => {
-            a.collect::<Vec<_>>().get(0).cloned()
-        }
-        Err(_) => {
-            s.add(":25565").to_socket_addrs()
-                .ok()
-                .and_then(|a| a.collect::<Vec<_>>().get(0).cloned())
-        }
+        Ok(a) => a.collect::<Vec<_>>().get(0).cloned(),
+        Err(_) => s
+            .add(":25565")
+            .to_socket_addrs()
+            .ok()
+            .and_then(|a| a.collect::<Vec<_>>().get(0).cloned()),
     };
     match sock_addr {
         Some(addr) => Ok(addr),
@@ -49,5 +47,8 @@ where
 }
 
 fn default_bind() -> Vec<SocketAddr> {
-    vec!["0.0.0.0:25565".parse().unwrap(), "[::]:25565".parse().unwrap()]
+    vec![
+        "0.0.0.0:25565".parse().unwrap(),
+        "[::]:25565".parse().unwrap(),
+    ]
 }

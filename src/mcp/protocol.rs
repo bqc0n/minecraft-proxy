@@ -9,7 +9,7 @@ pub fn create_packet(id: u8, data: BytesMut) -> BytesMut {
     let mut packet_data = BytesMut::new();
     write_varint(&mut packet_data, id as i32);
     packet_data.extend(data);
-    
+
     let mut packet = BytesMut::new();
     write_varint(&mut packet, packet_data.len() as i32);
     packet.extend(packet_data);

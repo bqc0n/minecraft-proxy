@@ -1,6 +1,6 @@
-pub mod ping;
-pub mod fake_server;
 mod constants;
+pub mod fake_server;
+pub mod ping;
 mod protocol;
 
 #[cfg(test)]

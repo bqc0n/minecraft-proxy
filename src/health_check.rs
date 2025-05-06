@@ -17,21 +17,19 @@ pub(crate) async fn activate_health_check_for(
 
         debug!("Health check for {}", server);
         let mut stream = match time::timeout(timeout, TcpStream::connect(server)).await {
-            Ok(r) => {
-                match r {
-                    Ok(stream) => stream,
-                    Err(_) => {
-                        debug!("Server {} is down", server);
-                        tx.send(false).unwrap();
-                        continue;
-                    }
+            Ok(r) => match r {
+                Ok(stream) => stream,
+                Err(_) => {
+                    debug!("Server {} is down", server);
+                    tx.send(false).unwrap();
+                    continue;
                 }
-            }
+            },
             Err(e) => {
                 debug!("Server {} is down; Timeout {}", server, e);
                 tx.send(false).unwrap();
-                continue
-            },
+                continue;
+            }
         };
 
         debug!("Server {} is up", server);
