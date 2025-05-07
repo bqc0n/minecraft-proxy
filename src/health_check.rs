@@ -18,21 +18,21 @@ pub(crate) async fn activate_health_check_for(
         sleep(interval).await;
 
         debug!("Health check for {}", server);
-        let stream = if let Ok(r) =  time::timeout(timeout, TcpStream::connect(server)).await {
+        let stream = if let Ok(r) = time::timeout(timeout, TcpStream::connect(server)).await {
             match r {
                 Ok(s) => {
                     if !history_is_healthy {
                         info!("Server {} is up", server);
                     }
                     s
-                },
+                }
                 Err(_) => {
                     if history_is_healthy {
                         info!("Server {} is down", server);
                         tx.send(false).unwrap();
                         history_is_healthy = false;
                     }
-                    continue
+                    continue;
                 }
             }
         } else {
@@ -41,7 +41,7 @@ pub(crate) async fn activate_health_check_for(
                 tx.send(false).unwrap();
                 history_is_healthy = false;
             }
-            continue
+            continue;
         };
 
         // Todo: Gather Server info using Minecraft Protocol

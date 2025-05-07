@@ -1,25 +1,12 @@
-use crate::mcp::constants::{VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, VARINT_SEGMENT_BITS, VARINT_SEGMENT_BITS_I32};
+use crate::mcp::constants;
+use crate::mcp::constants::{
+    VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, VARINT_SEGMENT_BITS, VARINT_SEGMENT_BITS_I32,
+};
+use crate::mcp::ping::Response;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use log::debug;
-use crate::mcp::constants;
-use crate::mcp::ping::Response;
-
-pub struct McPacketHeader {
-    pub length: McVarInt,
-    pub packet_id: McVarInt,
-}
-
-impl McPacketHeader {
-    pub fn read(buf: &mut BytesMut) -> anyhow::Result<Self> {
-        let length = McVarInt::read(buf)?;
-        let packet_id = McVarInt::read(buf)?;
-
-        Ok(McPacketHeader {
-            length,
-            packet_id,
-        })
-    }
-}
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpStream;
 
 pub enum ServerBoundMcPacket {
     Handshake {
@@ -37,10 +24,13 @@ impl ServerBoundMcPacket {
         }
     }
 
-    pub fn read(packet: &[u8]) -> anyhow::Result<Self> {
-        let mut buf = BytesMut::from(packet);
-        let header = McPacketHeader::read(&mut buf)?;
-        let packet_id = header.packet_id.int();
+    pub async fn read_packet(client: &mut TcpStream) -> anyhow::Result<Self> {
+        let length = McVarInt::read_stream(client).await?.int() as usize;
+        let mut buf = BytesMut::with_capacity(length);
+        buf.resize(length, 0);
+        client.read_exact(&mut buf).await?;
+
+        let packet_id = McVarInt::read(&mut buf)?.int();
 
         if packet_id == constants::HANDSHAKE {
             let protocol_version = McVarInt::read_i32(&mut buf)?;
@@ -62,12 +52,8 @@ impl ServerBoundMcPacket {
 }
 
 pub enum ClientBoundMcPacket {
-    StatusResponse {
-        json_response: String,
-    },
-    LoginDisconnect {
-        reason: String,
-    },
+    StatusResponse { json_response: String },
+    LoginDisconnect { reason: String },
 }
 
 impl ClientBoundMcPacket {
@@ -138,6 +124,25 @@ impl McVarInt {
         Ok(McVarInt(value))
     }
 
+    pub async fn read_stream<R: AsyncReadExt + Unpin>(reader: &mut R) -> anyhow::Result<Self> {
+        let mut value = 0i32;
+        let mut pos = 0i32;
+
+        loop {
+            let byte = reader.read_u8().await?;
+            value |= ((byte & VARINT_SEGMENT_BITS) as i32) << pos;
+            if byte & VARINT_CONTINUE_BIT == 0 {
+                break;
+            }
+            pos += 7;
+            if pos >= 32 {
+                return Err(anyhow::anyhow!("Varint is too big"));
+            }
+        }
+
+        Ok(McVarInt(value))
+    }
+
     pub fn write(&self, buf: &mut BytesMut) -> u8 {
         let mut length = 0;
         let mut value = self.int();
@@ -161,7 +166,6 @@ impl McVarInt {
     pub fn int(&self) -> i32 {
         self.0
     }
-
 }
 
 pub struct McString {
@@ -180,58 +184,4 @@ impl McString {
     pub fn read_string(buf: &mut BytesMut) -> anyhow::Result<String> {
         Ok(Self::read(buf)?.value)
     }
-}
-
-pub fn create_packet(id: u32, data: BytesMut) -> BytesMut {
-    let mut packet_data = BytesMut::new();
-    write_varint(&mut packet_data, id as i32);
-    packet_data.extend(data);
-
-    let mut packet = BytesMut::new();
-    write_varint(&mut packet, packet_data.len() as i32);
-    packet.extend(packet_data);
-
-    packet
-}
-
-/// returns (length, packet_id)
-/// given buffer will contain the rest of the packet i.e. data
-pub fn read_packet(buf: &mut BytesMut) -> (u32, u32) {
-    let length = read_varint(buf).unwrap();
-    let packet_id = read_varint(buf).unwrap();
-    return (length, packet_id);
-}
-
-/// returns the length of the varint in bytes
-pub(super) fn write_varint(buf: &mut BytesMut, mut value: i32) -> u8 {
-    let mut length = 0;
-    loop {
-        length += 1;
-        if (value & !VARINT_SEGMENT_BITS_I32) == 0 {
-            buf.put_u8(value as u8);
-            return length;
-        } else {
-            buf.put_u8(((value & VARINT_SEGMENT_BITS_I32) | VARINT_CONTINUE_BIT_I32) as u8);
-            value >>= 7;
-        }
-    }
-}
-
-pub(crate) fn read_varint(buf: &mut BytesMut) -> anyhow::Result<u32> {
-    let mut value = 0;
-    let mut pos = 0;
-
-    loop {
-        let byte = buf.get_u8();
-        value |= ((byte & VARINT_SEGMENT_BITS) as u32) << pos;
-        if byte & VARINT_CONTINUE_BIT == 0 {
-            break;
-        }
-        pos += 7;
-        if pos >= 32 {
-            return Err(anyhow::anyhow!("Varint is too big"));
-        }
-    }
-
-    Ok(value)
 }
