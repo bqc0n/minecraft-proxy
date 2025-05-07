@@ -9,7 +9,6 @@ use crate::mcp::ping::Response;
 use crate::proxy::proxy_tcp;
 use env_logger::Env;
 use log::{error, info};
-use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,11 +24,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let mut handlers = Vec::new();
-    let response: Option<Response> = if let Some(ss_config) = config.sorry_server {
-        Some(Response::from_config(ss_config))
-    } else {
-        None
-    };
+    let response: Option<Response> = config.sorry_server.map(Response::from_config);
 
     if config.health_check.enabled {
         info!(

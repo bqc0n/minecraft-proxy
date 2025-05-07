@@ -51,16 +51,10 @@ pub async fn proxy_tcp(
                     )
                     .unwrap();
                     client.read_to_end(&mut data).await.unwrap();
-                    if let Err(_) = upstream.write_all(&data).await {
+                    if (upstream.write_all(&data).await).is_err() {
                         error!("Failed to write to server");
-                        return;
                     }
-                } else {
-                    match io::copy_bidirectional(&mut upstream, &mut client).await {
-                        Ok(_) => {}
-                        Err(_) => {}
-                    }
-                }
+                } else if let Ok(_) = io::copy_bidirectional(&mut upstream, &mut client).await {}
             });
         } else {
             if health_changed {

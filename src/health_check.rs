@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::{debug, info};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::net::TcpStream;
@@ -18,7 +18,7 @@ pub(crate) async fn activate_health_check_for(
         sleep(interval).await;
 
         debug!("Health check for {}", server);
-        let stream = if let Ok(r) = time::timeout(timeout, TcpStream::connect(server)).await {
+        let _stream = if let Ok(r) = time::timeout(timeout, TcpStream::connect(server)).await {
             match r {
                 Ok(s) => {
                     if !history_is_healthy {

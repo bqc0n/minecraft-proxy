@@ -66,12 +66,12 @@ where
 {
     let s = String::deserialize(deserializer)?;
     let sock_addr = match s.to_socket_addrs() {
-        Ok(a) => a.collect::<Vec<_>>().get(0).cloned(),
+        Ok(a) => a.collect::<Vec<_>>().first().cloned(),
         Err(_) => s
             .add(":25565")
             .to_socket_addrs()
             .ok()
-            .and_then(|a| a.collect::<Vec<_>>().get(0).cloned()),
+            .and_then(|a| a.collect::<Vec<_>>().first().cloned()),
     };
     match sock_addr {
         Some(addr) => Ok(addr),

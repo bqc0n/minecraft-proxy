@@ -1,6 +1,6 @@
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
-const PROXY_PROTOCOL_START: &'static [u8] = &[
+const PROXY_PROTOCOL_START: &[u8] = &[
     0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A,
 ];
 

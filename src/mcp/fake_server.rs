@@ -1,11 +1,8 @@
-use crate::mcp::constants::HANDSHAKE;
 use crate::mcp::ping::Response;
-use crate::mcp::protocol::{ClientBoundMcPacket, HandshakeState, McVarInt, ServerBoundMcPacket};
-use crate::mcp::{constants, protocol};
-use bytes::BytesMut;
-use log::{debug, error, info};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
+use crate::mcp::protocol::{ClientBoundMcPacket, HandshakeState, ServerBoundMcPacket};
+use log::error;
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpStream;
 
 pub async fn handle_connection(client: &mut TcpStream, response: &Response) -> anyhow::Result<()> {
     let packet = ServerBoundMcPacket::read_packet(client).await?;
