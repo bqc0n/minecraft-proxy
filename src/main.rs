@@ -13,7 +13,7 @@ use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let env = Env::default().filter_or("RUST_LOG", "info");
+    let env = Env::default().filter_or("RUST_LOG", "debug");
     env_logger::init_from_env(env);
 
     let config_file = std::fs::File::open("./src/config.yaml")?;
