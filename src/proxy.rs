@@ -7,13 +7,14 @@ use tokio::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch::Receiver;
+use crate::configuration::SorryServerConfig;
 
 pub async fn proxy_tcp(
     listen: SocketAddr,
     server: SocketAddr,
     proxy_protocol: bool,
     mut health: Receiver<bool>,
-    fake_server_response: Option<Response>,
+    fake_server_config: Option<SorryServerConfig>,
 ) -> io::Result<()> {
     let listener = TcpListener::bind(listen).await?;
     if proxy_protocol {
@@ -60,8 +61,10 @@ pub async fn proxy_tcp(
             if health_changed {
                 debug!("Server {} is down", server);
             }
-            if let Some(ref fake_server_response) = fake_server_response {
-                match fake_server::handle_connection(&mut client, fake_server_response).await {
+            if let Some(ref fake_server_config) = fake_server_config {
+                let response = Response::from_config(fake_server_config.clone());
+                let kick_msg = fake_server_config.kick_message.clone();
+                match fake_server::handle_connection(&mut client, &response, &kick_msg).await {
                     Ok(_) => {}
                     Err(e) => error!("Fake Server failed to respond: {}", e),
                 }

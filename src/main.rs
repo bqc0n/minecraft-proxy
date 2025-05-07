@@ -12,7 +12,7 @@ use log::{error, info};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let env = Env::default().filter_or("RUST_LOG", "debug");
+    let env = Env::default().filter_or("RUST_LOG", "info");
     env_logger::init_from_env(env);
 
     let config_file = std::fs::File::open("./src/config.yaml")?;
@@ -24,7 +24,6 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let mut handlers = Vec::new();
-    let response: Option<Response> = config.sorry_server.map(Response::from_config);
 
     if config.health_check.enabled {
         info!(
@@ -42,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
                 proxy.server,
                 proxy.proxy_protocol,
                 rx,
-                response.clone(),
+                config.sorry_server.clone(),
             )));
             if config.health_check.enabled {
                 handlers.push(tokio::spawn(health_check::activate_health_check_for(

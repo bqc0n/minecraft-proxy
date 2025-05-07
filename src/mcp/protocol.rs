@@ -5,6 +5,7 @@ use crate::mcp::constants::{
 use crate::mcp::ping::Response;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use log::debug;
+use serde_json::json;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
 
@@ -18,12 +19,6 @@ pub enum ServerBoundMcPacket {
 }
 
 impl ServerBoundMcPacket {
-    pub fn id(&self) -> i32 {
-        match self {
-            ServerBoundMcPacket::Handshake { .. } => constants::HANDSHAKE,
-        }
-    }
-
     pub async fn read_packet(client: &mut TcpStream) -> anyhow::Result<Self> {
         let length = McVarInt::read_stream(client).await?.int() as usize;
         let mut buf = BytesMut::with_capacity(length);
@@ -62,6 +57,11 @@ impl ClientBoundMcPacket {
         ClientBoundMcPacket::StatusResponse { json_response }
     }
 
+    pub fn login_disconnect(reason: &Vec<String>) -> Self {
+        let reason = reason.join("\n");
+        ClientBoundMcPacket::LoginDisconnect { reason }
+    }
+
     pub fn to_packet(&self) -> Bytes {
         let mut packet_data = BytesMut::new();
         // the entire packet len contains the len of Packet Id: VarInt
@@ -74,6 +74,9 @@ impl ClientBoundMcPacket {
             }
             ClientBoundMcPacket::LoginDisconnect { reason } => {
                 McVarInt(constants::HANDSHAKE).write(&mut packet_data);
+                let data = json!({ "text": reason }).to_string();
+                McVarInt(data.len() as i32).write(&mut packet_data);
+                packet_data.extend_from_slice(data.as_bytes());
             }
         };
 

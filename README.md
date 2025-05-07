@@ -12,14 +12,13 @@ I created this for learning rust and TCP/IP programming.
 - TCP (Java Edition) Proxy
 - Proxy Protocol v2
 - Health Checking
-- Sorry Server (Fake MC Server) (Partially, only for server ping)
+- Sorry Server (Fake MC Server)
 
 ### Not Implemented
 
 - UDP (Bedrock Edition) Proxy
 - SRV Record Support
 - Sanity Checks (e.g. panic when binding to the same address:port)
-- Sorry Server Kick Message
 
 ## Configuration
 
