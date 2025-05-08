@@ -1,0 +1,5 @@
+services:
+  proxy:
+    build: .
+    volumes:
+      - ./config.yaml:/app/config.yaml
