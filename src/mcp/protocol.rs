@@ -1,6 +1,6 @@
 use crate::mcp::constants;
 use crate::mcp::constants::{
-    VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, VARINT_SEGMENT_BITS, VARINT_SEGMENT_BITS_I32,
+    VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, SEVEN_BITS, SEVEN_BITS_I32,
 };
 use crate::mcp::ping::Response;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
@@ -108,13 +108,17 @@ impl HandshakeState {
 pub struct McVarInt(i32);
 
 impl McVarInt {
+    pub fn new(value: i32) -> Self {
+        McVarInt(value)
+    }
+
     pub fn read(buf: &mut BytesMut) -> anyhow::Result<Self> {
         let mut value = 0i32;
         let mut pos = 0i32;
 
         loop {
             let byte = buf.get_u8();
-            value |= ((byte & VARINT_SEGMENT_BITS) as i32) << pos;
+            value |= ((byte & SEVEN_BITS) as i32) << pos;
             if byte & VARINT_CONTINUE_BIT == 0 {
                 break;
             }
@@ -133,7 +137,7 @@ impl McVarInt {
 
         loop {
             let byte = reader.read_u8().await?;
-            value |= ((byte & VARINT_SEGMENT_BITS) as i32) << pos;
+            value |= ((byte & SEVEN_BITS) as i32) << pos;
             if byte & VARINT_CONTINUE_BIT == 0 {
                 break;
             }
@@ -152,11 +156,11 @@ impl McVarInt {
 
         loop {
             length += 1;
-            if (value & !VARINT_SEGMENT_BITS_I32) == 0 {
+            if (value & !SEVEN_BITS_I32) == 0 {
                 buf.put_u8(value as u8);
                 return length;
             } else {
-                buf.put_u8(((value & VARINT_SEGMENT_BITS_I32) | VARINT_CONTINUE_BIT_I32) as u8);
+                buf.put_u8(((value & SEVEN_BITS_I32) | VARINT_CONTINUE_BIT_I32) as u8);
                 value >>= 7;
             }
         }
