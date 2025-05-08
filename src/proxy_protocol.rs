@@ -1,6 +1,8 @@
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
-const PROXY_PROTOCOL_START: &'static [u8] = &[0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A];
+const PROXY_PROTOCOL_START: &[u8] = &[
+    0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A,
+];
 
 const AF_UNSPEC: u8 = 0x00;
 const AF_INET: u8 = 0x10;
@@ -82,9 +84,18 @@ impl ProxyHeaderV2 {
 }
 
 enum ProxyAddress {
-    V4 { src: SocketAddrV4, dest: SocketAddrV4 },
-    V6 { src: SocketAddrV6, dest: SocketAddrV6 },
-    Unix { src: [u8; 108], dest: [u8; 108] },
+    V4 {
+        src: SocketAddrV4,
+        dest: SocketAddrV4,
+    },
+    V6 {
+        src: SocketAddrV6,
+        dest: SocketAddrV6,
+    },
+    Unix {
+        src: [u8; 108],
+        dest: [u8; 108],
+    },
 }
 
 impl ProxyAddress {
@@ -112,7 +123,12 @@ impl ProxyAddress {
     }
 }
 
-pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: SocketAddr, command: CommandV2) -> anyhow::Result<()> {
+pub fn append_proxy_protocol_v2(
+    data: &mut Vec<u8>,
+    src: SocketAddr,
+    dest: SocketAddr,
+    command: CommandV2,
+) -> anyhow::Result<()> {
     match (src, dest) {
         (SocketAddr::V4(src), SocketAddr::V4(dest)) => append_pp_v2_ipv4(data, src, dest, command),
         (SocketAddr::V6(src), SocketAddr::V6(dest)) => append_pp_v2_ipv6(data, src, dest, command),
@@ -120,7 +136,12 @@ pub fn append_proxy_protocol_v2(data: &mut Vec<u8>, src: SocketAddr, dest: Socke
     }
 }
 
-fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, command: CommandV2) -> anyhow::Result<()> {
+fn append_pp_v2_ipv4(
+    data: &mut Vec<u8>,
+    src: SocketAddrV4,
+    dest: SocketAddrV4,
+    command: CommandV2,
+) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v4(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = ProxyAddress::V4 { src, dest };
@@ -129,7 +150,12 @@ fn append_pp_v2_ipv4(data: &mut Vec<u8>, src: SocketAddrV4, dest: SocketAddrV4, 
     Ok(())
 }
 
-fn append_pp_v2_ipv6(data: &mut Vec<u8>, src: SocketAddrV6, dest: SocketAddrV6, command: CommandV2) -> anyhow::Result<()> {
+fn append_pp_v2_ipv6(
+    data: &mut Vec<u8>,
+    src: SocketAddrV6,
+    dest: SocketAddrV6,
+    command: CommandV2,
+) -> anyhow::Result<()> {
     let header = ProxyHeaderV2::create_v6(command, TransportProtocol::Stream);
     data.extend_from_slice(&header.to_bytes());
     let addr = ProxyAddress::V6 { src, dest };

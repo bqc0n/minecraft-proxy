@@ -1,16 +1,20 @@
+mod configuration;
+mod health_check;
+mod mcp;
 mod proxy;
 mod proxy_protocol;
-mod configuration;
 
 use crate::configuration::Configuration;
+use crate::mcp::ping::Response;
 use crate::proxy::proxy_tcp;
-use anyhow::Error;
-use bytes::BufMut;
-use std::str::FromStr;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use env_logger::Env;
+use log::{error, info};
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> anyhow::Result<()> {
+    let env = Env::default().filter_or("RUST_LOG", "info");
+    env_logger::init_from_env(env);
+
     let config_file = std::fs::File::open("./src/config.yaml")?;
     let config: Configuration = match serde_yaml::from_reader(config_file) {
         Ok(c) => c,
@@ -21,15 +25,38 @@ async fn main() -> Result<(), Error> {
 
     let mut handlers = Vec::new();
 
+    if config.health_check.enabled {
+        info!(
+            "Health check enabled with {}s interval and {}s timeout",
+            config.health_check.interval().as_secs(),
+            config.health_check.timeout().as_secs()
+        );
+    }
+
     for (_, proxy) in config.proxies {
         for bind_addr in proxy.bind {
-            handlers.push(tokio::spawn(proxy_tcp(bind_addr, proxy.server, proxy.proxy_protocol)))
+            let (tx, rx) = tokio::sync::watch::channel(true);
+            handlers.push(tokio::spawn(proxy_tcp(
+                bind_addr,
+                proxy.server,
+                proxy.proxy_protocol,
+                rx,
+                config.sorry_server.clone(),
+            )));
+            if config.health_check.enabled {
+                handlers.push(tokio::spawn(health_check::activate_health_check_for(
+                    proxy.server,
+                    tx,
+                    config.health_check.interval(),
+                    config.health_check.timeout(),
+                )))
+            }
         }
     }
 
     for handler in handlers {
         if let Err(e) = handler.await {
-            eprintln!("Error: {:?}", e);
+            error!("Error: {:?}", e);
         }
     }
 
