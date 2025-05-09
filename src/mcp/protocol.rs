@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use crate::mcp::constants;
 use crate::mcp::constants::{
     VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT_I32, SEVEN_BITS, SEVEN_BITS_I32,
@@ -31,7 +32,7 @@ impl ServerBoundMcPacket {
             let protocol_version = McVarInt::read_i32(&mut buf)?;
             let server_address = McString::read_string(&mut buf)?;
             let server_port = buf.get_u16();
-            let next_state = HandshakeState::from(McVarInt::read(&mut buf)?);
+            let next_state = HandshakeState::from(McVarInt::read(&mut buf)?)?;
             debug!("Handshake packet: protocol_version: {}, server_address: {}, server_port: {}, next_state: {:?}", protocol_version, server_address, server_port, next_state);
 
             Ok(ServerBoundMcPacket::Handshake {
@@ -95,12 +96,12 @@ pub enum HandshakeState {
 }
 
 impl HandshakeState {
-    pub fn from(value: McVarInt) -> Self {
+    pub fn from(value: McVarInt) -> anyhow::Result<Self> {
         match value.int() {
-            1 => HandshakeState::Status,
-            2 => HandshakeState::Login,
-            3 => HandshakeState::Transfer,
-            _ => panic!("Invalid handshake state"),
+            1 => Ok(HandshakeState::Status),
+            2 => Ok(HandshakeState::Login),
+            3 => Ok(HandshakeState::Transfer),
+            _ => Err(anyhow!("Invalid handshake state")),
         }
     }
 }
