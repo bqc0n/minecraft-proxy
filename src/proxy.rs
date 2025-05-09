@@ -3,6 +3,7 @@ use crate::mcp::ping::Response;
 use crate::proxy_protocol::{append_proxy_protocol_v2, CommandV2};
 use log::{debug, error, info};
 use std::net::SocketAddr;
+use anyhow::anyhow;
 use tokio::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -16,7 +17,13 @@ pub async fn proxy_tcp(
     mut health: Receiver<bool>,
     fake_server_config: Option<SorryServerConfig>,
 ) -> anyhow::Result<()> {
-    let listener = TcpListener::bind(listen).await?;
+    let listener = match TcpListener::bind(listen).await {
+        Ok(l) => l,
+        Err(e) => {
+            error!("Failed to bind to {}: {}", listen, e);
+            return Err(anyhow!(e));
+        },
+    };
     if proxy_protocol {
         info!(
             "Listening on {}, forwarding to {} with ProxyProtocol V2",
