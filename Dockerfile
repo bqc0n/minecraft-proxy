@@ -19,5 +19,4 @@ WORKDIR /app
 
 COPY --from=builder /app/main /app/main
 
-
 ENTRYPOINT [ "/app/main", "/app/config.yaml" ]
