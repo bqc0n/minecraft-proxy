@@ -4,6 +4,7 @@ mod mcp;
 mod proxy;
 mod proxy_protocol;
 
+use std::path::Path;
 use crate::configuration::Configuration;
 use crate::mcp::ping::Response;
 use crate::proxy::proxy_tcp;
@@ -15,7 +16,21 @@ async fn main() -> anyhow::Result<()> {
     let env = Env::default().filter_or("RUST_LOG", "info");
     env_logger::init_from_env(env);
 
-    let config_file = std::fs::File::open("./src/config.yaml")?;
+    let args: Vec<String> = std::env::args().collect();
+    let config_file_path = if args.len() > 1 {
+        args[1].clone()
+    } else {
+        "./config.yaml".to_string()
+    };
+
+    info!("Loading configuration from {}", config_file_path);
+
+    if !Path::new(&config_file_path).exists() {
+        error!("Configuration file {} does not exist", config_file_path);
+        return Err(anyhow::anyhow!("Configuration file does not exist"));
+    }
+
+    let config_file = std::fs::File::open(config_file_path)?;
     let config: Configuration = match serde_yaml::from_reader(config_file) {
         Ok(c) => c,
         Err(e) => {
@@ -34,23 +49,23 @@ async fn main() -> anyhow::Result<()> {
     }
 
     for (_, proxy) in config.proxies {
+        let (tx, rx) = tokio::sync::watch::channel(true);
         for bind_addr in proxy.bind {
-            let (tx, rx) = tokio::sync::watch::channel(true);
             handlers.push(tokio::spawn(proxy_tcp(
                 bind_addr,
                 proxy.server,
                 proxy.proxy_protocol,
-                rx,
+                rx.clone(),
                 config.sorry_server.clone(),
             )));
-            if config.health_check.enabled {
-                handlers.push(tokio::spawn(health_check::activate_health_check_for(
-                    proxy.server,
-                    tx,
-                    config.health_check.interval(),
-                    config.health_check.timeout(),
-                )))
-            }
+        }
+        if config.health_check.enabled {
+            handlers.push(tokio::spawn(health_check::activate_health_check_for(
+                proxy.server,
+                tx,
+                config.health_check.interval(),
+                config.health_check.timeout(),
+            )))
         }
     }
 

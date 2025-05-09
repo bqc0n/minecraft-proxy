@@ -1,0 +1,7 @@
+services:
+  proxy:
+    build: .
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    ports:
+      - "25565:25565"
