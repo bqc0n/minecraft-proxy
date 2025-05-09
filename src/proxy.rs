@@ -15,7 +15,7 @@ pub async fn proxy_tcp(
     proxy_protocol: bool,
     mut health: Receiver<bool>,
     fake_server_config: Option<SorryServerConfig>,
-) -> io::Result<()> {
+) -> anyhow::Result<()> {
     let listener = TcpListener::bind(listen).await?;
     if proxy_protocol {
         info!(

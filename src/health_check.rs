@@ -1,6 +1,7 @@
 use log::{debug, info};
 use std::net::SocketAddr;
 use std::time::Duration;
+use anyhow::anyhow;
 use tokio::net::TcpStream;
 use tokio::sync::watch::Sender;
 use tokio::time::sleep;
@@ -11,40 +12,48 @@ pub(crate) async fn activate_health_check_for(
     tx: Sender<bool>,
     interval: Duration,
     timeout: Duration,
-) -> io::Result<()> {
-    let mut history_is_healthy = true;
+) -> anyhow::Result<()> {
+    let mut init = true;
+    let mut history_is_healthy = false;
 
     loop {
-        sleep(interval).await;
+        let healthy = check(&server, timeout).await;
 
-        debug!("Health check for {}", server);
-        let _stream = if let Ok(r) = time::timeout(timeout, TcpStream::connect(server)).await {
-            match r {
-                Ok(s) => {
-                    if !history_is_healthy {
-                        info!("Server {} is up", server);
-                    }
-                    s
+        match healthy {
+            Ok(_) => {
+                if init || !history_is_healthy {
+                    info!("Server {} is up", server);
+                    history_is_healthy = true;
+                    init = false;
                 }
-                Err(_) => {
-                    if history_is_healthy {
-                        info!("Server {} is down", server);
-                        tx.send(false).unwrap();
-                        history_is_healthy = false;
-                    }
-                    continue;
+                tx.send(true)?;
+            }
+            Err(e) => {
+                if init || history_is_healthy {
+                    info!("Server {} is down: {}", server, e);
+                    history_is_healthy = false;
+                    init = false;
                 }
+                tx.send(false)?;
             }
-        } else {
-            if history_is_healthy {
-                info!("Server {} is down: Timeout", server);
-                tx.send(false).unwrap();
-                history_is_healthy = false;
-            }
-            continue;
-        };
-
-        // Todo: Gather Server info using Minecraft Protocol
-        tx.send(true).unwrap();
+        }
     }
+}
+
+/// Returns `Err` if unhealthy, `Ok` if healthy
+async fn check(
+    server: &SocketAddr,
+    timeout: Duration,
+) -> anyhow::Result<()> {
+    if let Ok(r) = time::timeout(timeout, TcpStream::connect(server)).await {
+        match r {
+            Ok(s) => s,
+            Err(e) => return Err(anyhow!(e)),
+        }
+    } else {
+        return Err(anyhow!("Timeout"));
+    };
+
+    // Todo: Gather Server info using Minecraft Protocol
+    Ok(())
 }

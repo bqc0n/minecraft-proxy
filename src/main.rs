@@ -22,10 +22,10 @@ async fn main() -> anyhow::Result<()> {
     } else {
         "./config.yaml".to_string()
     };
-    
+
     info!("Loading configuration from {}", config_file_path);
-    
-    if !Path::new(&config_file_path).exists() { 
+
+    if !Path::new(&config_file_path).exists() {
         error!("Configuration file {} does not exist", config_file_path);
         return Err(anyhow::anyhow!("Configuration file does not exist"));
     }
@@ -49,23 +49,23 @@ async fn main() -> anyhow::Result<()> {
     }
 
     for (_, proxy) in config.proxies {
+        let (tx, rx) = tokio::sync::watch::channel(true);
         for bind_addr in proxy.bind {
-            let (tx, rx) = tokio::sync::watch::channel(true);
             handlers.push(tokio::spawn(proxy_tcp(
                 bind_addr,
                 proxy.server,
                 proxy.proxy_protocol,
-                rx,
+                rx.clone(),
                 config.sorry_server.clone(),
             )));
-            if config.health_check.enabled {
-                handlers.push(tokio::spawn(health_check::activate_health_check_for(
-                    proxy.server,
-                    tx,
-                    config.health_check.interval(),
-                    config.health_check.timeout(),
-                )))
-            }
+        }
+        if config.health_check.enabled {
+            handlers.push(tokio::spawn(health_check::activate_health_check_for(
+                proxy.server,
+                tx,
+                config.health_check.interval(),
+                config.health_check.timeout(),
+            )))
         }
     }
 
