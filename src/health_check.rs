@@ -37,6 +37,8 @@ pub(crate) async fn activate_health_check_for(
                 tx.send(false)?;
             }
         }
+        
+        tokio::time::sleep(interval).await;
     }
 }
 
