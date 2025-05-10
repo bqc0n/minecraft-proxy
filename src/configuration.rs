@@ -3,11 +3,13 @@ use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::ops::Add;
 use std::time::Duration;
+use anyhow::anyhow;
+use log::{debug, error};
 
 #[derive(Deserialize, Clone)]
 pub(crate) struct Configuration {
     #[serde(rename = "servers")]
-    pub proxies: HashMap<String, ProxyConfig>,
+    pub proxies: Vec<ProxyConfig>,
     pub sorry_server: Option<SorryServerConfig>,
     #[serde(default)]
     pub health_check: HealthCheck,
@@ -66,16 +68,21 @@ where
 {
     let s = String::deserialize(deserializer)?;
     let sock_addr = match s.to_socket_addrs() {
-        Ok(a) => a.collect::<Vec<_>>().first().cloned(),
-        Err(_) => s
-            .add(":25565")
-            .to_socket_addrs()
-            .ok()
-            .and_then(|a| a.collect::<Vec<_>>().first().cloned()),
+        Ok(addrs) => addrs.collect::<Vec<_>>().first().cloned().ok_or(anyhow!("Empty address")),
+        Err(e) => {
+            match s.clone().add(":25565").to_socket_addrs() {
+                Ok(addrs) => addrs.collect::<Vec<_>>().first().cloned().ok_or(anyhow!("Empty address")),
+                Err(e1) => Err(anyhow!("Failed to parse address: {}. Error: {}", s, e1)),
+            }
+        }
     };
+
     match sock_addr {
-        Some(addr) => Ok(addr),
-        None => Err(serde::de::Error::custom("Invalid socket address")),
+        Ok(addr) => Ok(addr),
+        Err(e) => {
+            error!("Failed to parse address: {}. Error: {}", s, e);
+            Err(serde::de::Error::custom(format!("Invalid address {}: {} ", s, e)))
+        }
     }
 }
 

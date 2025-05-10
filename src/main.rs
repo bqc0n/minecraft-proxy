@@ -10,17 +10,18 @@ use crate::mcp::ping::Response;
 use crate::proxy::proxy_tcp;
 use env_logger::Env;
 use log::{error, info};
+use toml::de::Error;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let env = Env::default().filter_or("RUST_LOG", "info");
+    let env = Env::default().filter_or("RUST_LOG", "debug");
     env_logger::init_from_env(env);
 
     let args: Vec<String> = std::env::args().collect();
     let config_file_path = if args.len() > 1 {
         args[1].clone()
     } else {
-        "./config.yaml".to_string()
+        "./config.toml".to_string()
     };
 
     info!("Loading configuration from {}", config_file_path);
@@ -30,11 +31,12 @@ async fn main() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Configuration file does not exist"));
     }
 
-    let config_file = std::fs::File::open(config_file_path)?;
-    let config: Configuration = match serde_yaml::from_reader(config_file) {
+    let config_str = std::fs::read_to_string(&config_file_path)?;
+    let config: Configuration = match toml::from_str::<Configuration>(&config_str) {
         Ok(c) => c,
         Err(e) => {
-            return Err(e.into());
+            error!("Failed to parse configuration file: {}", e);
+            return Err(anyhow::anyhow!("Failed to parse configuration file: {}", e));
         }
     };
 
@@ -48,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
-    for (_, proxy) in config.proxies {
+    for proxy in config.proxies {
         let (tx, rx) = tokio::sync::watch::channel(true);
         for bind_addr in proxy.bind {
             handlers.push(tokio::spawn(proxy_tcp(

@@ -1,0 +1,18 @@
+[[servers]]
+host = "minecraft.example.com" # Port defaults to 25565
+
+[[servers]]
+proxy_protocol = true # Enable proxy protocol v2
+bind = ["0.0.0.0:25565"] # Only bind to IPv4
+host = "192.0.2.1:25656" # Port can be specified
+
+# Health Check and Sorry Server is optional.
+[health_check]
+enabled = true
+interval_sec = 5
+timeout_sec = 3
+
+[sorry_server]
+version = "§cOffline"
+motd = ["§cServer is currently offline.", "§bPlease try again later."]
+kick_message = ["§cServer is currently offline.", "§bPlease try again later."]
