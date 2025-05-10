@@ -79,9 +79,8 @@ where
     }
 }
 
+/// Default bind address for the proxy server.
+/// `[::]:25565` will also bind to IPv4, so there is no `0.0.0.0:25565`.
 fn default_bind() -> Vec<SocketAddr> {
-    vec![
-        "0.0.0.0:25565".parse().unwrap(),
-        "[::]:25565".parse().unwrap(),
-    ]
+    vec!["[::]:25565".parse().unwrap(), ]
 }

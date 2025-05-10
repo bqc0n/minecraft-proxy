@@ -30,6 +30,8 @@ TOOD: use toml
 
 In the `servers` section, you can define multiple `server` objects:
 
-| Field  |  Type  |                                                     Description                                                     |
-|:------:|:------:|:-------------------------------------------------------------------------------------------------------------------:|
-| `host` | string | `IP:port` or `domain-name:port` of the origin server. Port can be ommitted, in which case it will default to 25565. |
+|      Field       |   Type   |                                                     Description                                                     |
+|:----------------:|:--------:|:-------------------------------------------------------------------------------------------------------------------:|
+|      `host`      |  string  | `IP:port` or `domain-name:port` of the origin server. Port can be ommitted, in which case it will default to 25565. |
+|      `bind`      | string[] |        Socket addresses to bind. Default is `[::]:25565`. Note: IPv6 wildcard bind `::` will contains IPv4.         |
+| `proxy_protocol` |   bool   |                                     Enable Proxy Protocol v2. Default is false.                                     |
