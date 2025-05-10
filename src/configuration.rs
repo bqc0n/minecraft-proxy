@@ -18,7 +18,7 @@ pub struct ProxyConfig {
     #[serde(default = "default_bind")]
     pub bind: Vec<SocketAddr>,
     #[serde(deserialize_with = "deserialize_server")]
-    pub server: SocketAddr,
+    pub host: SocketAddr,
     #[serde(default)] // Default to false
     pub proxy_protocol: bool,
 }
