@@ -35,11 +35,11 @@ Refer to the [examples](examples) for example configurations.
 
 ### `servers` (array)
 
-|      Field       |   Type   |                                                     Description                                                     |
-|:----------------:|:--------:|:-------------------------------------------------------------------------------------------------------------------:|
-|      `host`      |  String  | `IP:port` or `domain-name:port` of the origin server. Port can be ommitted, in which case it will default to 25565. |
-|      `bind`      | String[] |        Socket addresses to bind. Default is `[::]:25565`. Note: IPv6 wildcard bind `::` will contains IPv4.         |
-| `proxy_protocol` |   bool   |                                     Enable Proxy Protocol v2. Default is false.                                     |
+|      Field       |   Type   |                                                       Description                                                        |
+|:----------------:|:--------:|:------------------------------------------------------------------------------------------------------------------------:|
+|      `host`      |  String  |   `IP:port` or `domain-name:port` of the origin server. Port can be ommitted, in which case it will default to 25565.    |
+|      `bind`      | String[] | Socket addresses to bind. Default is `[::]:25565`. Note: IPv6 wildcard bind `::` may contains IPv4 in some environments. |
+| `proxy_protocol` |   bool   |                                       Enable Proxy Protocol v2. Default is false.                                        |
 
 ### `health_check`
 
