@@ -18,7 +18,7 @@ pub struct ProxyConfig {
     #[serde(default = "default_bind")]
     pub bind: Vec<SocketAddr>,
     #[serde(deserialize_with = "deserialize_server")]
-    pub server: SocketAddr,
+    pub host: SocketAddr,
     #[serde(default)] // Default to false
     pub proxy_protocol: bool,
 }
@@ -79,9 +79,8 @@ where
     }
 }
 
+/// Default bind address for the proxy server.
+/// `[::]:25565` will also bind to IPv4, so there is no `0.0.0.0:25565`.
 fn default_bind() -> Vec<SocketAddr> {
-    vec![
-        "0.0.0.0:25565".parse().unwrap(),
-        "[::]:25565".parse().unwrap(),
-    ]
+    vec!["[::]:25565".parse().unwrap(), ]
 }

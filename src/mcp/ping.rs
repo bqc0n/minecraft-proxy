@@ -10,7 +10,7 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn from_config(config: SorryServerConfig) -> Response {
+    pub fn from_config(config: SorryServerConfig) -> Self {
         let version = Version {
             name: config.version,
             protocol: DEFAULT_PROTOCOL,
@@ -26,7 +26,7 @@ impl Response {
             text: config.motd.join("\n"),
         };
 
-        Response {
+        Self {
             version,
             players,
             description,

@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
         for bind_addr in proxy.bind {
             handlers.push(tokio::spawn(proxy_tcp(
                 bind_addr,
-                proxy.server,
+                proxy.host,
                 proxy.proxy_protocol,
                 rx.clone(),
                 config.sorry_server.clone(),
@@ -61,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
         }
         if config.health_check.enabled {
             handlers.push(tokio::spawn(health_check::activate_health_check_for(
-                proxy.server,
+                proxy.host,
                 tx,
                 config.health_check.interval(),
                 config.health_check.timeout(),
