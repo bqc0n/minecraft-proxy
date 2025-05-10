@@ -43,14 +43,14 @@ struct ProxyHeaderV2 {
 }
 
 impl ProxyHeaderV2 {
-    fn create_v4(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
+    fn create_v4(command: CommandV2, transport: TransportProtocol) -> Self {
         let af_and_transport = match transport {
             TransportProtocol::Unspec => AF_INET | TRANSPORT_UNSPEC,
             TransportProtocol::Stream => AF_INET | TRANSPORT_STREAM,
             TransportProtocol::Dgram => AF_INET | TRANSPORT_DGRAM,
         };
         let length = 12;
-        ProxyHeaderV2 {
+        Self {
             sig: <[u8; 12]>::try_from(PROXY_PROTOCOL_START).unwrap(),
             version_and_command: command.get_num(),
             af_and_transport,
@@ -58,14 +58,14 @@ impl ProxyHeaderV2 {
         }
     }
 
-    fn create_v6(command: CommandV2, transport: TransportProtocol) -> ProxyHeaderV2 {
+    fn create_v6(command: CommandV2, transport: TransportProtocol) -> Self {
         let af_and_transport = match transport {
             TransportProtocol::Unspec => AF_INET6 | TRANSPORT_UNSPEC,
             TransportProtocol::Stream => AF_INET6 | TRANSPORT_STREAM,
             TransportProtocol::Dgram => AF_INET6 | TRANSPORT_DGRAM,
         };
         let length = 36;
-        ProxyHeaderV2 {
+        Self {
             sig: <[u8; 12]>::try_from(PROXY_PROTOCOL_START).unwrap(),
             version_and_command: command.get_num(),
             af_and_transport,

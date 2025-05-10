@@ -35,7 +35,7 @@ impl ServerBoundMcPacket {
             let next_state = HandshakeState::from(McVarInt::read(&mut buf)?)?;
             debug!("Handshake packet: protocol_version: {}, server_address: {}, server_port: {}, next_state: {:?}", protocol_version, server_address, server_port, next_state);
 
-            Ok(ServerBoundMcPacket::Handshake {
+            Ok(Self::Handshake {
                 protocol_version: McVarInt(protocol_version),
                 server_address,
                 server_port,
@@ -55,12 +55,12 @@ pub enum ClientBoundMcPacket {
 impl ClientBoundMcPacket {
     pub fn status_response(response: &Response) -> Self {
         let json_response = serde_json::to_string(response).unwrap();
-        ClientBoundMcPacket::StatusResponse { json_response }
+        Self::StatusResponse { json_response }
     }
 
     pub fn login_disconnect(reason: &Vec<String>) -> Self {
         let reason = reason.join("\n");
-        ClientBoundMcPacket::LoginDisconnect { reason }
+        Self::LoginDisconnect { reason }
     }
 
     pub fn to_packet(&self) -> Bytes {
@@ -68,12 +68,12 @@ impl ClientBoundMcPacket {
         // the entire packet len contains the len of Packet Id: VarInt
         // so we put the packet_id to the packet_data BytesMut
         match self {
-            ClientBoundMcPacket::StatusResponse { json_response } => {
+            Self::StatusResponse { json_response } => {
                 McVarInt(constants::HANDSHAKE).write(&mut packet_data);
                 McVarInt(json_response.len() as i32).write(&mut packet_data);
                 packet_data.extend_from_slice(json_response.as_bytes());
             }
-            ClientBoundMcPacket::LoginDisconnect { reason } => {
+            Self::LoginDisconnect { reason } => {
                 McVarInt(constants::HANDSHAKE).write(&mut packet_data);
                 let data = json!({ "text": reason }).to_string();
                 McVarInt(data.len() as i32).write(&mut packet_data);
@@ -82,7 +82,7 @@ impl ClientBoundMcPacket {
         };
 
         let mut packet = BytesMut::new();
-        McVarInt(packet_data.len() as i32).write(&mut packet);
+        McVarInt::new(packet_data.len() as i32).write(&mut packet);
         packet.extend(packet_data);
         packet.freeze()
     }
@@ -98,9 +98,9 @@ pub enum HandshakeState {
 impl HandshakeState {
     pub fn from(value: McVarInt) -> anyhow::Result<Self> {
         match value.int() {
-            1 => Ok(HandshakeState::Status),
-            2 => Ok(HandshakeState::Login),
-            3 => Ok(HandshakeState::Transfer),
+            1 => Ok(Self::Status),
+            2 => Ok(Self::Login),
+            3 => Ok(Self::Transfer),
             _ => Err(anyhow!("Invalid handshake state")),
         }
     }
@@ -110,12 +110,12 @@ pub struct McVarInt(i32);
 
 impl McVarInt {
     pub fn new(value: i32) -> Self {
-        McVarInt(value)
+        Self(value)
     }
 
     pub fn read(buf: &mut BytesMut) -> anyhow::Result<Self> {
-        let mut value = 0i32;
-        let mut pos = 0i32;
+        let mut value = 0;
+        let mut pos = 0;
 
         loop {
             let byte = buf.get_u8();
@@ -129,12 +129,12 @@ impl McVarInt {
             }
         }
 
-        Ok(McVarInt(value))
+        Ok(Self(value))
     }
 
     pub async fn read_stream<R: AsyncReadExt + Unpin>(reader: &mut R) -> anyhow::Result<Self> {
-        let mut value = 0i32;
-        let mut pos = 0i32;
+        let mut value = 0;
+        let mut pos = 0;
 
         loop {
             let byte = reader.read_u8().await?;
@@ -148,7 +148,7 @@ impl McVarInt {
             }
         }
 
-        Ok(McVarInt(value))
+        Ok(Self(value))
     }
 
     pub fn write(&self, buf: &mut BytesMut) -> u8 {
@@ -186,7 +186,7 @@ impl McString {
         let length = McVarInt::read(buf)?;
         let string_data = buf.split_to(length.int() as usize);
         let value = String::from_utf8(Vec::from(string_data.as_ref()))?;
-        Ok(McString { length, value })
+        Ok(Self { length, value })
     }
 
     pub fn read_string(buf: &mut BytesMut) -> anyhow::Result<String> {
